@@ -62,18 +62,6 @@ npm run electron:start # 构建前端并以桌面应用启动
 npm run electron:build # 构建当前平台的桌面安装包（release-electron/）
 ```
 
-## 🚀 发布新版本（持续更新流程）
-
-仓库已配置好完整的发布流水线，发布一个新版本只需三步：
-
-1. **首次开源**：把仓库推送到 GitHub（发布配置已指向 `Southrain-memory/DN-notebook`）；
-2. 改代码 → 更新 `package.json` 的 `version` → 提交；
-3. 打标签并推送：`git tag v1.2.1 && git push origin v1.2.1`。
-
-之后 GitHub Actions 会自动构建 Windows / macOS / Linux 三平台安装包，发布到 Releases 页并附带自动更新清单（`latest*.yml`）。已安装旧版本的用户启动应用时即会收到更新提示——这就是"持续更新"的闭环，不需要你手动分发任何文件。
-
-> 国内网络构建/下载 Electron 二进制较慢时，可设置镜像：`ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`。
-
 ## 🗂️ 目录结构
 
 ```
