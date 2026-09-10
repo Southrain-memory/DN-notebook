@@ -15,6 +15,8 @@
 | macOS | `DailyNotebook-x.y.x-mac.dmg` | 未签名应用，首次打开需**右键 → 打开** |
 | Linux | `DailyNotebook-x.y.z-linux-x86_64.AppImage` / `.deb` | AppImage 双击即用（需 FUSE）；deb 用包管理器安装 |
 
+> **Ubuntu 24.04+ 用户**：优先用 deb 安装（安装脚本已正确配置沙箱）。AppImage 版因系统新加的 AppArmor 用户名字空间限制可能启动即崩溃，若遇到请改用 deb，或运行时加 `--no-sandbox` 参数。
+
 **自动更新**：应用启动时会自动检查 GitHub Releases，有新版本会弹通知，一键升级；也可通过菜单「应用 → 检查更新…」手动触发。
 
 **数据位置**：桌面版数据保存在用户数据目录（`~/.config/每日记事本/` 下的 `tasks.json`、`events.json`、`categories.json`，Windows 在 `%APPDATA%/每日记事本/`），可通过菜单「应用 → 打开数据文件夹」直达；网页版数据在浏览器 localStorage，两者可用「导出/导入备份」互通。
