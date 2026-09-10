@@ -1,0 +1,40 @@
+# electron-builder 打包配置
+appId: com.dailynotebook.app
+productName: 每日记事本
+directories:
+  output: release-electron
+  buildResources: build
+files:
+  - dist/**
+  - electron/**
+  - package.json
+# 产物文件名用 ASCII，避免 GitHub Releases 链接的中文转义问题
+artifactName: DailyNotebook-${version}-${os}-${arch}.${ext}
+publish:
+  provider: github
+  owner: Southrain-memory
+  repo: DN-notebook
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: 每日记事本
+mac:
+  target:
+    - dmg
+  category: public.app-category.productivity
+  icon: build/icon.png
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility
+  icon: build/icon.png
+  maintainer: Southrain-memory
+  desktop:
+    Name: 每日记事本

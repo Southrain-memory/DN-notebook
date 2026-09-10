@@ -1,0 +1,40 @@
+# 发布流水线：推送 v* 标签后，自动构建三平台安装包并发布到 GitHub Releases。
+# 使用前请把 electron-builder.yml 里 publish 的 owner / repo 改成你的仓库地址。
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 构建前端
+        run: npm run build
+
+      - name: 打包并发布（三平台安装包 + 更新清单）
+        run: npx electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

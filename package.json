@@ -1,0 +1,45 @@
+{
+  "name": "daily-notebook",
+  "productName": "每日记事本",
+  "private": true,
+  "version": "1.3.0",
+  "type": "module",
+  "description": "极简个人每日任务与重要事项记录本（网页 + 桌面端）",
+  "homepage": "https://github.com/Southrain-memory/DN-notebook",
+  "author": "Daily Notebook Contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "concurrently -k \"vite\" \"cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "build": "vite build",
+    "build:single": "vite build --config vite.single.config.ts && cp -f release/index.html 每日记事本.html",
+    "electron:start": "npm run build && electron .",
+    "electron:build": "npm run build && electron-builder",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "lucide-react": "^0.469.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "tailwindcss": "^4.1.0",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.7",
+    "vite-plugin-singlefile": "^2.1.0"
+  }
+}

@@ -1,0 +1,130 @@
+import { useRef, useState } from 'react';
+import {
+  CalendarCheck,
+  CalendarDays,
+  ChartGantt,
+  Download,
+  Flag,
+  Moon,
+  NotebookPen,
+  Settings,
+  Sun,
+  Upload,
+} from 'lucide-react';
+import type { Tab } from '../nav';
+import { useDismiss } from '../hooks/useDismiss';
+
+interface Props {
+  tab: Tab;
+  onNavigate: (tab: Tab) => void;
+  importantCount: number;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
+  onExport: () => void;
+  onImportFile: (file: File) => void;
+}
+
+const menuItem =
+  'flex w-full items-center gap-2 px-3 py-2 text-sm text-stone-600 transition hover:bg-stone-100 dark:text-zinc-300 dark:hover:bg-zinc-800';
+
+/** 桌面端左侧边栏：主导航 + 底部主题切换与备份 */
+export function Sidebar({ tab, onNavigate, importantCount, theme, onToggleTheme, onExport, onImportFile }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useDismiss<HTMLDivElement>(() => setMenuOpen(false), menuOpen);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const items: { id: Tab; label: string; icon: typeof Flag; badge?: number }[] = [
+    { id: 'day', label: '今天', icon: CalendarCheck },
+    { id: 'important', label: '重要事项', icon: Flag, badge: importantCount },
+    { id: 'gantt', label: '时间甘特图', icon: ChartGantt },
+    { id: 'upcoming', label: '即将到来', icon: CalendarDays },
+    { id: 'records', label: '记事', icon: NotebookPen },
+  ];
+
+  const itemCls = (active: boolean) =>
+    `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
+      active
+        ? 'bg-rose-500/10 font-semibold text-rose-600 dark:bg-rose-500/15 dark:text-rose-400'
+        : 'text-stone-600 hover:bg-stone-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
+    }`;
+  const iconBtn =
+    'grid h-9 w-9 place-items-center rounded-lg text-stone-500 transition hover:bg-stone-200/70 dark:text-zinc-400 dark:hover:bg-zinc-800';
+
+  return (
+    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-stone-200/80 bg-stone-50/60 md:flex dark:border-zinc-800/80 dark:bg-zinc-900/30">
+      <div className="flex h-14 items-center gap-2.5 px-5">
+        <div className="grid h-8 w-8 place-items-center rounded-[10px] bg-rose-500 text-white shadow-sm shadow-rose-500/30">
+          <NotebookPen className="h-[18px] w-[18px]" />
+        </div>
+        <h1 className="text-[17px] font-bold tracking-wide text-stone-800 dark:text-zinc-100">每日记事本</h1>
+      </div>
+
+      <nav className="flex flex-col gap-1 px-3 pt-2">
+        {items.map((item) => (
+          <button key={item.id} type="button" onClick={() => onNavigate(item.id)} className={itemCls(tab === item.id)}>
+            <item.icon className="h-[18px] w-[18px]" />
+            <span className="flex-1 text-left">{item.label}</span>
+            {!!item.badge && (
+              <span className="min-w-[18px] rounded-full bg-rose-500 px-1 text-center text-[10px] font-semibold leading-[18px] text-white">
+                {item.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </nav>
+
+      <div className="mt-auto flex items-center gap-1 border-t border-stone-200/70 px-3 py-3 dark:border-zinc-800/70">
+        <button type="button" onClick={onToggleTheme} className={iconBtn} aria-label="切换深浅模式" title="切换深浅模式">
+          {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+        </button>
+        <div className="relative flex-1" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            className={`${itemCls(false)} text-stone-500 dark:text-zinc-400`}
+          >
+            <Settings className="h-[18px] w-[18px]" />
+            备份与恢复
+          </button>
+          {menuOpen && (
+            <div className="animate-menu-in absolute bottom-full left-0 z-50 mb-1 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onExport();
+                }}
+                className={menuItem}
+              >
+                <Download className="h-4 w-4" />
+                导出备份
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  fileRef.current?.click();
+                }}
+                className={menuItem}
+              >
+                <Upload className="h-4 w-4" />
+                导入备份
+              </button>
+            </div>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onImportFile(f);
+              e.target.value = '';
+            }}
+          />
+        </div>
+      </div>
+    </aside>
+  );
+}
