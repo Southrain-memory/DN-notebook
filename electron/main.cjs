@@ -5,6 +5,12 @@ const fs = require('node:fs');
 
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
+// app.name 会成为 Linux 窗口类名（WM_CLASS），必须保持 ASCII 才能被任务栏/启动器
+// 通过 .desktop 的 StartupWMClass 匹配（中文类名会匹配失败：图标退化、名称乱码）。
+// 数据目录钉回原中文名，沿用已发布版本的数据位置，老用户数据不受影响。
+app.setName('daily-notebook');
+app.setPath('userData', path.join(app.getPath('appData'), '每日记事本'));
+
 // ── 数据持久化：用户数据目录下的 tasks.json ──
 function dataFile() {
   return path.join(app.getPath('userData'), 'tasks.json');
@@ -62,6 +68,11 @@ function createWindow() {
     title: '每日记事本',
     backgroundColor: '#f5f5f4',
     autoHideMenuBar: true,
+    // Linux 下任务栏/启动器依赖窗口自带图标，缺失会退化为系统兜底图标；
+    // 打包后从 asar 外的 resources 读，避免 asar 内路径解析失败
+    icon: app.isPackaged
+      ? path.join(process.resourcesPath, 'icon.png')
+      : path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -125,7 +136,6 @@ function buildMenu() {
 }
 
 app.whenReady().then(() => {
-  app.setName('每日记事本');
   buildMenu();
   createWindow();
 

@@ -8,6 +8,10 @@ files:
   - dist/**
   - electron/**
   - package.json
+# 窗口图标放 asar 外，主进程经 process.resourcesPath 读取
+extraResources:
+  - from: build/icon.png
+    to: icon.png
 # 产物文件名用 ASCII，避免 GitHub Releases 链接的中文转义问题
 artifactName: DailyNotebook-${version}-${os}-${arch}.${ext}
 publish:
@@ -42,5 +46,10 @@ linux:
   category: Utility
   icon: build/icon.png
   maintainer: Southrain-memory
+  # 窗口类名（WM_CLASS）固定为 ASCII，任务栏/启动器靠它匹配 .desktop；
+  # 中文 productName 生成的类名部分面板无法识别（图标退化、名称乱码）
+  executableArgs:
+    - --class=daily-notebook
   desktop:
     Name: 每日记事本
+    StartupWMClass: daily-notebook
