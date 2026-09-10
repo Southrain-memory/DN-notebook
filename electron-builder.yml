@@ -14,6 +14,8 @@ publish:
   provider: github
   owner: Southrain-memory
   repo: DN-notebook
+  # 默认是 draft（草稿，需手动发布）；改成 release 后推标签即自动正式发布
+  releaseType: release
 win:
   target:
     - target: nsis
