@@ -4,3 +4,7 @@ release/
 release-electron/
 *.log
 .DS_Store
+
+# 个人功能想法 / 改进笔记，不入库
+新功能想法.md
+可改进点.md
