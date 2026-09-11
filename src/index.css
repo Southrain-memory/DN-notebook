@@ -12,6 +12,16 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 设置-手形光标：开启后可点击元素悬停时指针由箭头变手型 */
+html.cursor-gesture button:not(:disabled),
+html.cursor-gesture [role='button']:not(:disabled),
+html.cursor-gesture [role='switch'],
+html.cursor-gesture [role='tab'],
+html.cursor-gesture label,
+html.cursor-gesture input[type='range']:not(:disabled) {
+  cursor: pointer;
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

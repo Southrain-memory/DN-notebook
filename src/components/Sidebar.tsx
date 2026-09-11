@@ -1,18 +1,14 @@
-import { useRef, useState } from 'react';
 import {
   CalendarCheck,
   CalendarDays,
   ChartGantt,
-  Download,
   Flag,
   Moon,
   NotebookPen,
   Settings,
   Sun,
-  Upload,
 } from 'lucide-react';
 import type { Tab } from '../nav';
-import { useDismiss } from '../hooks/useDismiss';
 
 interface Props {
   tab: Tab;
@@ -20,19 +16,10 @@ interface Props {
   importantCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
-  onExport: () => void;
-  onImportFile: (file: File) => void;
 }
 
-const menuItem =
-  'flex w-full items-center gap-2 px-3 py-2 text-sm text-stone-600 transition hover:bg-stone-100 dark:text-zinc-300 dark:hover:bg-zinc-800';
-
-/** 桌面端左侧边栏：主导航 + 底部主题切换与备份 */
-export function Sidebar({ tab, onNavigate, importantCount, theme, onToggleTheme, onExport, onImportFile }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useDismiss<HTMLDivElement>(() => setMenuOpen(false), menuOpen);
-  const fileRef = useRef<HTMLInputElement>(null);
-
+/** 桌面端左侧边栏：主导航 + 底部主题切换与设置入口 */
+export function Sidebar({ tab, onNavigate, importantCount, theme, onToggleTheme }: Props) {
   const items: { id: Tab; label: string; icon: typeof Flag; badge?: number }[] = [
     { id: 'day', label: '今天', icon: CalendarCheck },
     { id: 'important', label: '重要事项', icon: Flag, badge: importantCount },
@@ -77,53 +64,14 @@ export function Sidebar({ tab, onNavigate, importantCount, theme, onToggleTheme,
         <button type="button" onClick={onToggleTheme} className={iconBtn} aria-label="切换深浅模式" title="切换深浅模式">
           {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
         </button>
-        <div className="relative flex-1" ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            className={`${itemCls(false)} text-stone-500 dark:text-zinc-400`}
-          >
-            <Settings className="h-[18px] w-[18px]" />
-            备份与恢复
-          </button>
-          {menuOpen && (
-            <div className="animate-menu-in absolute bottom-full left-0 z-50 mb-1 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onExport();
-                }}
-                className={menuItem}
-              >
-                <Download className="h-4 w-4" />
-                导出备份
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  fileRef.current?.click();
-                }}
-                className={menuItem}
-              >
-                <Upload className="h-4 w-4" />
-                导入备份
-              </button>
-            </div>
-          )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onImportFile(f);
-              e.target.value = '';
-            }}
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => onNavigate('settings')}
+          className={`${itemCls(tab === 'settings')} flex-1 text-stone-500 dark:text-zinc-400`}
+        >
+          <Settings className="h-[18px] w-[18px]" />
+          设置
+        </button>
       </div>
     </aside>
   );

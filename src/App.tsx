@@ -3,6 +3,7 @@ import type { EventRecord, RecordCategory, Task, TaskInput } from './data';
 import { useTasks } from './hooks/useTasks';
 import { useRecords } from './hooks/useRecords';
 import { useTheme } from './hooks/useTheme';
+import { useAppearance } from './hooks/useAppearance';
 import { Sidebar } from './components/Sidebar';
 import { MobileNav } from './components/MobileNav';
 import { TopBar } from './components/TopBar';
@@ -11,6 +12,7 @@ import { ImportantView } from './views/ImportantView';
 import { GanttView } from './views/GanttView';
 import { UpcomingView } from './views/UpcomingView';
 import { RecordsView } from './views/RecordsView';
+import { SettingsView } from './views/SettingsView';
 import { TaskEditModal } from './components/TaskEditModal';
 import { RecordEditModal } from './components/RecordEditModal';
 import { CategoryManager } from './components/CategoryPicker';
@@ -24,7 +26,8 @@ import type { Tab } from './nav';
 export default function App() {
   const { tasks, ready, add, update, remove, toggle, importAll } = useTasks();
   const records = useRecords();
-  const [theme, toggleTheme] = useTheme();
+  const [theme, setTheme] = useTheme();
+  const [appearance, setAppearance] = useAppearance();
   const [tab, setTab] = useState<Tab>('day');
   const [viewDate, setViewDate] = useState(todayStr());
   const [query, setQuery] = useState('');
@@ -103,14 +106,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [tab]);
 
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+
   const navProps = {
     tab,
     onNavigate: setTab,
     importantCount,
     theme,
     onToggleTheme: toggleTheme,
-    onExport: () => exportBackup(tasks, records.events, records.categories),
-    onImportFile: handleImportFile,
   };
 
   const viewProps = {
@@ -142,10 +145,9 @@ export default function App() {
           tasks={tasks}
           query={query}
           onQueryChange={setQuery}
+          onNavigate={setTab}
           theme={theme}
           onToggleTheme={toggleTheme}
-          onExport={() => exportBackup(tasks, records.events, records.categories)}
-          onImportFile={handleImportFile}
         />
 
         <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 md:pb-12">
@@ -162,6 +164,16 @@ export default function App() {
               onEdit={setEditingRecord}
               onDelete={setDeletingRecord}
               onManageCategories={() => setCatManagerOpen(true)}
+            />
+          )}
+          {tab === 'settings' && (
+            <SettingsView
+              theme={theme}
+              onSetTheme={setTheme}
+              appearance={appearance}
+              onAppearanceChange={(patch) => setAppearance({ ...appearance, ...patch })}
+              onExport={() => exportBackup(tasks, records.events, records.categories)}
+              onImportFile={handleImportFile}
             />
           )}
         </main>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 const KEY = 'daily-notebook.theme';
@@ -13,7 +13,7 @@ function initialTheme(): Theme {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-export function useTheme(): [Theme, () => void] {
+export function useTheme(): [Theme, (t: Theme) => void] {
   const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useEffect(() => {
@@ -25,6 +25,5 @@ export function useTheme(): [Theme, () => void] {
     }
   }, [theme]);
 
-  const toggle = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), []);
-  return [theme, toggle];
+  return [theme, setTheme];
 }

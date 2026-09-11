@@ -1,17 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Moon,
-  NotebookPen,
-  Search,
-  Settings,
-  Sun,
-  Upload,
-  X,
-} from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Moon, NotebookPen, Search, Settings, Sun, X } from 'lucide-react';
 import type { Tab } from '../nav';
 import { TAB_TITLES } from '../nav';
 import type { Task } from '../data';
@@ -26,18 +14,15 @@ interface Props {
   tasks: Task[];
   query: string;
   onQueryChange: (q: string) => void;
+  onNavigate: (tab: Tab) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
-  onExport: () => void;
-  onImportFile: (file: File) => void;
 }
 
 const iconBtn =
   'grid h-9 w-9 place-items-center rounded-lg text-stone-500 transition hover:bg-stone-200/70 dark:text-zinc-400 dark:hover:bg-zinc-800';
-const menuItem =
-  'flex w-full items-center gap-2 px-3 py-2 text-sm text-stone-600 transition hover:bg-stone-100 dark:text-zinc-300 dark:hover:bg-zinc-800';
 
-/** 内容区顶栏：手机端 logo + 主题/备份；日期导航 + 搜索框 */
+/** 内容区顶栏：手机端 logo + 主题/设置；日期导航 + 搜索框 */
 export function TopBar({
   tab,
   viewDate,
@@ -45,16 +30,12 @@ export function TopBar({
   tasks,
   query,
   onQueryChange,
+  onNavigate,
   theme,
   onToggleTheme,
-  onExport,
-  onImportFile,
 }: Props) {
   const [calOpen, setCalOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const calRef = useDismiss<HTMLDivElement>(() => setCalOpen(false), calOpen);
-  const menuRef = useDismiss<HTMLDivElement>(() => setMenuOpen(false), menuOpen);
-  const fileRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   // 支持快捷键 / 聚焦搜索
@@ -65,6 +46,7 @@ export function TopBar({
   }, []);
 
   const showDateNav = tab === 'day' || tab === 'gantt';
+  const showSearch = tab !== 'settings';
 
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-stone-100/85 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/85">
@@ -80,53 +62,14 @@ export function TopBar({
             {TAB_TITLES[tab]}
           </h2>
 
-          {/* 手机端：主题与备份（桌面端在侧边栏） */}
+          {/* 手机端：主题与设置（桌面端在侧边栏） */}
           <div className="flex items-center gap-1 md:hidden">
             <button type="button" onClick={onToggleTheme} className={iconBtn} aria-label="切换深浅模式">
               {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             </button>
-            <div className="relative" ref={menuRef}>
-              <button type="button" onClick={() => setMenuOpen((o) => !o)} className={iconBtn} aria-label="备份与恢复">
-                <Settings className="h-[18px] w-[18px]" />
-              </button>
-              {menuOpen && (
-                <div className="animate-menu-in absolute right-0 top-11 z-50 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onExport();
-                    }}
-                    className={menuItem}
-                  >
-                    <Download className="h-4 w-4" />
-                    导出备份
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      fileRef.current?.click();
-                    }}
-                    className={menuItem}
-                  >
-                    <Upload className="h-4 w-4" />
-                    导入备份
-                  </button>
-                </div>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".json,application/json"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onImportFile(f);
-                  e.target.value = '';
-                }}
-              />
-            </div>
+            <button type="button" onClick={() => onNavigate('settings')} className={iconBtn} aria-label="设置">
+              <Settings className="h-[18px] w-[18px]" />
+            </button>
           </div>
         </div>
 
@@ -171,36 +114,38 @@ export function TopBar({
           </div>
         )}
 
-        {/* 搜索框（所有页签可用） */}
-        <div className={`flex pb-3 ${showDateNav ? '' : 'justify-end'}`}>
-          <div className="relative ml-auto">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-zinc-500" />
-            <input
-              ref={searchRef}
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  onQueryChange('');
-                  e.currentTarget.blur();
-                }
-              }}
-              placeholder="搜索任务…"
-              aria-label="搜索任务"
-              className="w-36 rounded-lg border border-transparent bg-stone-200/60 py-1.5 pl-8 pr-7 text-xs text-stone-700 outline-none transition placeholder:text-stone-400 focus:w-44 focus:border-rose-300 focus:bg-white dark:bg-zinc-800/70 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-rose-500/50 md:w-52 md:focus:w-64"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => onQueryChange('')}
-                aria-label="清空搜索"
-                className="absolute right-1.5 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded text-stone-400 transition hover:bg-stone-200/70 dark:hover:bg-zinc-700"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
+        {/* 搜索框（任务相关页签可用） */}
+        {showSearch && (
+          <div className={`flex pb-3 ${showDateNav ? '' : 'justify-end'}`}>
+            <div className="relative ml-auto">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-zinc-500" />
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={(e) => onQueryChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    onQueryChange('');
+                    e.currentTarget.blur();
+                  }
+                }}
+                placeholder="搜索任务…"
+                aria-label="搜索任务"
+                className="w-36 rounded-lg border border-transparent bg-stone-200/60 py-1.5 pl-8 pr-7 text-xs text-stone-700 outline-none transition placeholder:text-stone-400 focus:w-44 focus:border-rose-300 focus:bg-white dark:bg-zinc-800/70 dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-rose-500/50 md:w-52 md:focus:w-64"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => onQueryChange('')}
+                  aria-label="清空搜索"
+                  className="absolute right-1.5 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded text-stone-400 transition hover:bg-stone-200/70 dark:hover:bg-zinc-700"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );

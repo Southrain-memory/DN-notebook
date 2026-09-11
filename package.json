@@ -2,7 +2,7 @@
   "name": "daily-notebook",
   "productName": "每日记事本",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "type": "module",
   "description": "极简个人每日任务与重要事项记录本（网页 + 桌面端）",
   "homepage": "https://github.com/Southrain-memory/DN-notebook",
