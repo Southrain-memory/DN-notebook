@@ -1,5 +1,5 @@
 // 《每日记事本》Electron 主进程
-const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell, Notification } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -10,6 +10,8 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 // 数据目录钉回原中文名，沿用已发布版本的数据位置，老用户数据不受影响。
 app.setName('daily-notebook');
 app.setPath('userData', path.join(app.getPath('appData'), '每日记事本'));
+// Windows 系统通知需要与安装包 appId 一致的 Application User Model ID
+app.setAppUserModelId('com.dailynotebook.app');
 
 // ── 数据持久化：用户数据目录下的 tasks.json ──
 function dataFile() {
@@ -57,6 +59,34 @@ ipcMain.handle('store:save', (_event, key, data) => {
 function storeFileOf(key) {
   return path.join(app.getPath('userData'), `${key}.json`);
 }
+
+function iconPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'icon.png')
+    : path.join(__dirname, '..', 'build', 'icon.png');
+}
+
+function focusMainWindow() {
+  const win = BrowserWindow.getAllWindows()[0];
+  if (!win) return;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+
+ipcMain.handle('notify:show', (_event, payload) => {
+  if (!payload || typeof payload.title !== 'string' || typeof payload.body !== 'string') return false;
+  if (!Notification.isSupported()) return false;
+  const n = new Notification({
+    title: payload.title.slice(0, 80),
+    body: payload.body.slice(0, 200),
+    icon: iconPath(),
+    silent: false,
+  });
+  n.on('click', focusMainWindow);
+  n.show();
+  return true;
+});
 
 // ── 窗口 ──
 function createWindow() {

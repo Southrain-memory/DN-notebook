@@ -54,8 +54,9 @@ export function QuickAdd({ defaultDate, onAdd, forcedPriority }: Props) {
     const parsed = parseQuickInput(raw);
     const nextDate = parsed.date ?? date;
     const nextPriority = forcedPriority ?? (parsed.priority ?? priority);
-    const nextStart = parsed.startTime;
-    const nextEnd = parsed.endTime;
+    const parsedHasTime = parsed.startTime !== undefined || parsed.endTime !== undefined;
+    const nextStart = parsedHasTime ? parsed.startTime : startTime;
+    const nextEnd = parsedHasTime ? parsed.endTime : endTime;
     onAdd({
       title: parsed.title || raw,
       note: note.trim(),

@@ -4,6 +4,8 @@ import { useTasks } from './hooks/useTasks';
 import { useRecords } from './hooks/useRecords';
 import { useTheme } from './hooks/useTheme';
 import { useAppearance } from './hooks/useAppearance';
+import { useNotifySettings } from './hooks/useNotifySettings';
+import { useTaskNotifications } from './hooks/useTaskNotifications';
 import { Sidebar } from './components/Sidebar';
 import { MobileNav } from './components/MobileNav';
 import { TopBar } from './components/TopBar';
@@ -18,6 +20,8 @@ import { RecordEditModal } from './components/RecordEditModal';
 import { CategoryManager } from './components/CategoryPicker';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { ShortcutHelp } from './components/ShortcutHelp';
+import { NotifyToasts } from './components/NotifyToasts';
+import type { DueNotice } from './utils/notify';
 import { exportBackup, parseBackup } from './utils/backup';
 import { addDays, todayStr } from './utils/date';
 import { matchesQuery } from './utils/task';
@@ -28,7 +32,9 @@ export default function App() {
   const records = useRecords();
   const [theme, setTheme] = useTheme();
   const [appearance, setAppearance] = useAppearance();
+  const [notify, setNotify] = useNotifySettings();
   const [tab, setTab] = useState<Tab>('day');
+  const [settingsReturn, setSettingsReturn] = useState<Tab>('day');
   const [viewDate, setViewDate] = useState(todayStr());
   const [query, setQuery] = useState('');
   const [helpOpen, setHelpOpen] = useState(false);
@@ -38,6 +44,15 @@ export default function App() {
   const [editingRecord, setEditingRecord] = useState<EventRecord | null>(null);
   const [deletingRecord, setDeletingRecord] = useState<EventRecord | null>(null);
   const [catManagerOpen, setCatManagerOpen] = useState(false);
+  const [notices, setNotices] = useState<DueNotice[]>([]);
+
+  const pushNotice = useCallback((n: DueNotice) => {
+    setNotices((prev) => (prev.some((x) => x.key === n.key) ? prev : [...prev, n]));
+  }, []);
+  const dismissNotice = useCallback((key: string) => {
+    setNotices((prev) => prev.filter((n) => n.key !== key));
+  }, []);
+  useTaskNotifications(tasks, notify, pushNotice);
 
   const editing = useMemo(() => tasks.find((t) => t.id === editingId) ?? null, [tasks, editingId]);
   const importantCount = useMemo(() => tasks.filter((t) => t.priority === 'high' && !t.done).length, [tasks]);
@@ -84,6 +99,10 @@ export default function App() {
         setHelpOpen(true);
         return;
       }
+      if (tab === 'settings') {
+        if (e.key === 'Escape') setTab(settingsReturn === 'settings' ? 'day' : settingsReturn);
+        return;
+      }
       if (e.key === '1') setTab('day');
       else if (e.key === '2') setTab('important');
       else if (e.key === '3') setTab('gantt');
@@ -104,13 +123,25 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tab]);
+  }, [tab, settingsReturn]);
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
+  const handleNavigate = useCallback(
+    (next: Tab) => {
+      if (next === 'settings' && tab !== 'settings') setSettingsReturn(tab);
+      setTab(next);
+    },
+    [tab],
+  );
+
+  const leaveSettings = useCallback(() => {
+    setTab(settingsReturn === 'settings' ? 'day' : settingsReturn);
+  }, [settingsReturn]);
+
   const navProps = {
     tab,
-    onNavigate: setTab,
+    onNavigate: handleNavigate,
     importantCount,
     theme,
     onToggleTheme: toggleTheme,
@@ -133,7 +164,21 @@ export default function App() {
     );
   }
 
-  return (
+  const settingsScreen = tab === 'settings' && (
+    <SettingsView
+      theme={theme}
+      onSetTheme={setTheme}
+      appearance={appearance}
+      onAppearanceChange={(patch) => setAppearance({ ...appearance, ...patch })}
+      notify={notify}
+      onNotifyChange={setNotify}
+      onExport={() => exportBackup(tasks, records.events, records.categories)}
+      onImportFile={handleImportFile}
+      onBack={leaveSettings}
+    />
+  );
+
+  const notebookScreen = tab !== 'settings' && (
     <div className="min-h-screen bg-stone-100 text-stone-800 md:flex dark:bg-zinc-950 dark:text-zinc-200">
       <Sidebar {...navProps} />
 
@@ -145,7 +190,7 @@ export default function App() {
           tasks={tasks}
           query={query}
           onQueryChange={setQuery}
-          onNavigate={setTab}
+          onNavigate={handleNavigate}
           theme={theme}
           onToggleTheme={toggleTheme}
         />
@@ -166,20 +211,17 @@ export default function App() {
               onManageCategories={() => setCatManagerOpen(true)}
             />
           )}
-          {tab === 'settings' && (
-            <SettingsView
-              theme={theme}
-              onSetTheme={setTheme}
-              appearance={appearance}
-              onAppearanceChange={(patch) => setAppearance({ ...appearance, ...patch })}
-              onExport={() => exportBackup(tasks, records.events, records.categories)}
-              onImportFile={handleImportFile}
-            />
-          )}
         </main>
       </div>
 
-      <MobileNav tab={tab} onNavigate={setTab} importantCount={importantCount} />
+      <MobileNav tab={tab} onNavigate={handleNavigate} importantCount={importantCount} />
+    </div>
+  );
+
+  return (
+    <>
+      {settingsScreen}
+      {notebookScreen}
 
       {editing && (
         <TaskEditModal
@@ -262,6 +304,8 @@ export default function App() {
       )}
 
       {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
-    </div>
+
+      <NotifyToasts notices={notices} onDismiss={dismissNotice} />
+    </>
   );
 }

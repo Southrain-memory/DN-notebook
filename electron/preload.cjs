@@ -14,4 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   storeLoad: (key) => ipcRenderer.invoke('store:load', key),
   /** 写入用户数据目录下 {key}.json */
   storeSave: (key, data) => ipcRenderer.invoke('store:save', key, data),
+  /** 弹出系统通知（点击后聚焦主窗口） */
+  showNotification: (payload) => ipcRenderer.invoke('notify:show', payload),
 });

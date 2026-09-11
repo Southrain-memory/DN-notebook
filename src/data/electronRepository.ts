@@ -17,6 +17,8 @@ interface ElectronBridge {
   storeLoad(key: string): Promise<unknown>;
   /** 写入用户数据目录下 {key}.json */
   storeSave(key: string, data: unknown): Promise<unknown>;
+  /** 弹出系统通知 */
+  showNotification?(payload: { title: string; body: string }): Promise<boolean>;
 }
 
 declare global {
