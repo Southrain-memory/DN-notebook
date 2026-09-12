@@ -20,4 +20,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   prefsLoad: () => ipcRenderer.invoke('prefs:load'),
   /** 写入窗口偏好 */
   prefsSave: (patch) => ipcRenderer.invoke('prefs:save', patch),
+  /** 主动触发一次更新检查（结果经 onUpdateAvailable 推送） */
+  checkUpdate: () => ipcRenderer.invoke('updater:check'),
+  /** 记录已知晓的发布（点击更新徽标后调用，同版本不再重复提示） */
+  ackUpdate: (publishedAt) => ipcRenderer.invoke('updater:ack', publishedAt),
+  /** 订阅「有更新可下载」推送 */
+  onUpdateAvailable: (callback) => {
+    ipcRenderer.on('updater:available', (_event, info) => callback(info));
+  },
 });

@@ -41,7 +41,6 @@ mac:
   icon: build/icon.png
 linux:
   target:
-    - AppImage
     - deb
   category: Utility
   icon: build/icon.png

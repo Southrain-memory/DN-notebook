@@ -22,6 +22,7 @@ import { CategoryManager } from './components/CategoryPicker';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { ShortcutHelp } from './components/ShortcutHelp';
 import { NotifyToasts } from './components/NotifyToasts';
+import { UpdateBadge } from './components/UpdateBadge';
 import type { DueNotice } from './utils/notify';
 import { exportBackup, parseBackup } from './utils/backup';
 import { addDays, todayStr } from './utils/date';
@@ -238,6 +239,8 @@ export default function App() {
     <>
       {settingsScreen}
       {notebookScreen}
+
+      <UpdateBadge />
 
       {editing && (
         <TaskEditModal

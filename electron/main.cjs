@@ -82,6 +82,59 @@ function savePrefs(patch) {
 ipcMain.handle('prefs:load', () => loadPrefs());
 ipcMain.handle('prefs:save', (_event, patch) => (patch && typeof patch === 'object' ? savePrefs(patch) : loadPrefs()));
 
+// ── 更新检查：查 GitHub 最新 Release，有更新时通知渲染层在左下角显示徽标 ──
+// 与 electron-updater 不同：同版本号重新发布（发布时间更晚）也会提示，配合用户「重发同版本」的习惯；
+// 点击徽标跳转 Release 页并记录时间，之后同版本不再重复提示，直到又发布新的 Release。
+const RELEASE_API = 'https://api.github.com/repos/Southrain-memory/DN-notebook/releases/latest';
+
+function semverBigger(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return true;
+    if ((pa[i] || 0) < (pb[i] || 0)) return false;
+  }
+  return false;
+}
+
+function sendUpdateAvailable(win, info) {
+  if (win && !win.isDestroyed()) win.webContents.send('updater:available', info);
+}
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch(RELEASE_API, { headers: { 'User-Agent': 'daily-notebook' } });
+    if (!res.ok) return;
+    const rel = await res.json();
+    if (!rel || rel.draft) return;
+    const version = String(rel.tag_name || '').replace(/^v/i, '');
+    if (!/^\d+\.\d+\.\d+$/.test(version)) return;
+    const current = app.getVersion();
+    const publishedAt = Date.parse(rel.published_at || '') || 0;
+    const lastAck = Number(loadPrefs().lastAckReleaseAt) || 0;
+    const isNewer = semverBigger(version, current);
+    const republished = version === current && publishedAt > lastAck;
+    if (isNewer || republished) {
+      sendUpdateAvailable(BrowserWindow.getAllWindows()[0], {
+        version,
+        url: rel.html_url,
+        publishedAt,
+      });
+    }
+  } catch (err) {
+    console.error('检查更新失败：', err?.message ?? err);
+  }
+}
+
+ipcMain.handle('updater:check', () => {
+  checkForUpdate();
+  return true;
+});
+ipcMain.handle('updater:ack', (_event, publishedAt) => {
+  savePrefs({ lastAckReleaseAt: Number(publishedAt) || Date.now() });
+  return true;
+});
+
 function storeFileOf(key) {
   return path.join(app.getPath('userData'), `${key}.json`);
 }
@@ -240,11 +293,7 @@ function buildMenu() {
         {
           label: '检查更新…',
           click: () => {
-            if (!app.isPackaged) return;
-            const { autoUpdater } = require('electron-updater');
-            autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-              console.error('检查更新失败：', err);
-            });
+            checkForUpdate();
           },
         },
         {
@@ -284,17 +333,9 @@ if (!gotSingleLock) {
     createWindow();
     createTray();
 
-    // 打包后启动时自动检查更新（静默，发现新版本会弹系统通知）
-    if (app.isPackaged) {
-      try {
-        const { autoUpdater } = require('electron-updater');
-        autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-          console.error('自动更新检查失败：', err?.message ?? err);
-        });
-      } catch (err) {
-        console.error('更新组件不可用：', err);
-      }
-    }
+    // 启动与每 30 分钟检查一次 GitHub 新版本（有更新时渲染层左下角显示徽标）
+    checkForUpdate();
+    setInterval(checkForUpdate, 30 * 60 * 1000);
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

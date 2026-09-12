@@ -23,6 +23,12 @@ interface ElectronBridge {
   prefsLoad?(): Promise<{ closeAction?: string } | null>;
   /** 写入窗口偏好 */
   prefsSave?(patch: { closeAction?: string }): Promise<unknown>;
+  /** 触发一次更新检查（结果经 onUpdateAvailable 推送） */
+  checkUpdate?(): Promise<boolean>;
+  /** 记录已知晓的发布时间戳 */
+  ackUpdate?(publishedAt: number): Promise<unknown>;
+  /** 订阅「有更新可下载」推送 */
+  onUpdateAvailable?(callback: (info: { version: string; url: string; publishedAt: number }) => void): void;
 }
 
 declare global {
