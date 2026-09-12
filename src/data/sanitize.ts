@@ -42,6 +42,7 @@ export function sanitizeTask(raw: unknown): Task | null {
     priority: sanitizePriority(r.priority),
     done: r.done === true,
     doneAt: typeof r.doneAt === 'number' ? r.doneAt : undefined,
+    deletedAt: typeof r.deletedAt === 'number' ? r.deletedAt : undefined,
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : now,
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : now,
   };

@@ -46,8 +46,31 @@ export function useTasks() {
 
   const remove = useCallback(
     async (id: string) => {
-      await repo.delete(id);
-      setTasks((prev) => prev.filter((t) => t.id !== id));
+      // 软删除：进回收站，可恢复；彻底删除走 purge
+      await repo.update(id, { deletedAt: Date.now() });
+      setTasks(await repo.getAll());
+    },
+    [repo],
+  );
+
+  /** 从回收站恢复（单个 / 批量 / 全部都传 id 数组） */
+  const restore = useCallback(
+    async (ids: string[]) => {
+      for (const id of ids) {
+        await repo.update(id, { deletedAt: undefined });
+      }
+      setTasks(await repo.getAll());
+    },
+    [repo],
+  );
+
+  /** 彻底删除（不可恢复），支持批量 */
+  const purge = useCallback(
+    async (ids: string[]) => {
+      for (const id of ids) {
+        await repo.delete(id);
+      }
+      setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
     },
     [repo],
   );
@@ -69,5 +92,5 @@ export function useTasks() {
     [repo],
   );
 
-  return { tasks, ready, add, update, remove, toggle, importAll };
+  return { tasks, ready, add, update, remove, toggle, restore, purge, importAll };
 }

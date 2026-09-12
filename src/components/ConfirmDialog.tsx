@@ -4,12 +4,20 @@ interface Props {
   title: string;
   message: string;
   confirmText?: string;
+  cancelText?: string;
   onConfirm: () => void;
   onClose: () => void;
 }
 
 /** 删除 / 导入等危险操作的确认对话框 */
-export function ConfirmDialog({ title, message, confirmText = '删除', onConfirm, onClose }: Props) {
+export function ConfirmDialog({
+  title,
+  message,
+  confirmText = '删除',
+  cancelText = '取消',
+  onConfirm,
+  onClose,
+}: Props) {
   const confirmRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     confirmRef.current?.focus();
@@ -38,7 +46,7 @@ export function ConfirmDialog({ title, message, confirmText = '删除', onConfir
             onClick={onClose}
             className="rounded-lg px-3.5 py-2 text-sm font-medium text-stone-500 transition hover:bg-stone-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
-            取消
+            {cancelText}
           </button>
           <button
             ref={confirmRef}

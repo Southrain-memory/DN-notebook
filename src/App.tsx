@@ -15,6 +15,7 @@ import { GanttView } from './views/GanttView';
 import { UpcomingView } from './views/UpcomingView';
 import { RecordsView } from './views/RecordsView';
 import { SettingsView } from './views/SettingsView';
+import { TrashView } from './views/TrashView';
 import { TaskEditModal } from './components/TaskEditModal';
 import { RecordEditModal } from './components/RecordEditModal';
 import { CategoryManager } from './components/CategoryPicker';
@@ -28,7 +29,7 @@ import { matchesQuery } from './utils/task';
 import type { Tab } from './nav';
 
 export default function App() {
-  const { tasks, ready, add, update, remove, toggle, importAll } = useTasks();
+  const { tasks, ready, add, update, remove, toggle, restore, purge, importAll } = useTasks();
   const records = useRecords();
   const [theme, setTheme] = useTheme();
   const [appearance, setAppearance] = useAppearance();
@@ -55,13 +56,25 @@ export default function App() {
   useTaskNotifications(tasks, notify, pushNotice);
 
   const editing = useMemo(() => tasks.find((t) => t.id === editingId) ?? null, [tasks, editingId]);
-  const importantCount = useMemo(() => tasks.filter((t) => t.priority === 'high' && !t.done).length, [tasks]);
-  const visibleTasks = useMemo(() => (query.trim() ? tasks.filter((t) => matchesQuery(t, query)) : tasks), [tasks, query]);
+  // 回收站之外的活动任务
+  const activeTasks = useMemo(() => tasks.filter((t) => !t.deletedAt), [tasks]);
+  const deletedTasks = useMemo(
+    () => tasks.filter((t) => t.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)),
+    [tasks],
+  );
+  const trashCount = deletedTasks.length;
+  const importantCount = useMemo(() => activeTasks.filter((t) => t.priority === 'high' && !t.done).length, [activeTasks]);
+  const visibleTasks = useMemo(
+    () => (query.trim() ? activeTasks.filter((t) => matchesQuery(t, query)) : activeTasks),
+    [activeTasks, query],
+  );
 
   const failAlert = () => alert('保存失败：浏览器本地存储可能不可用（请检查浏览器隐私设置）');
   const handleAdd = useCallback((input: TaskInput) => add(input).catch(failAlert), [add]);
   const handleToggle = useCallback((id: string) => toggle(id).catch(failAlert), [toggle]);
   const handleRemove = useCallback((id: string) => remove(id).catch(failAlert), [remove]);
+  const handleRestore = useCallback((ids: string[]) => restore(ids).catch(failAlert), [restore]);
+  const handlePurge = useCallback((ids: string[]) => purge(ids).catch(failAlert), [purge]);
   const handleDefer = useCallback(
     (t: Task) => update(t.id, { date: addDays(t.date, 1) }).catch(failAlert),
     [update],
@@ -108,6 +121,7 @@ export default function App() {
       else if (e.key === '3') setTab('gantt');
       else if (e.key === '4') setTab('upcoming');
       else if (e.key === '5') setTab('records');
+      else if (e.key === '6') setTab('trash');
       else if (e.key === 'ArrowLeft' && (tab === 'day' || tab === 'gantt')) setViewDate((d) => addDays(d, -1));
       else if (e.key === 'ArrowRight' && (tab === 'day' || tab === 'gantt')) setViewDate((d) => addDays(d, 1));
       else if (e.key === 't' || e.key === 'T') {
@@ -143,6 +157,7 @@ export default function App() {
     tab,
     onNavigate: handleNavigate,
     importantCount,
+    trashCount,
     theme,
     onToggleTheme: toggleTheme,
   };
@@ -172,7 +187,7 @@ export default function App() {
       onAppearanceChange={(patch) => setAppearance({ ...appearance, ...patch })}
       notify={notify}
       onNotifyChange={setNotify}
-      onExport={() => exportBackup(tasks, records.events, records.categories)}
+      onExport={() => exportBackup(activeTasks, records.events, records.categories)}
       onImportFile={handleImportFile}
       onBack={leaveSettings}
     />
@@ -211,10 +226,11 @@ export default function App() {
               onManageCategories={() => setCatManagerOpen(true)}
             />
           )}
+          {tab === 'trash' && <TrashView tasks={deletedTasks} onRestore={handleRestore} onPurge={handlePurge} />}
         </main>
       </div>
 
-      <MobileNav tab={tab} onNavigate={handleNavigate} importantCount={importantCount} />
+      <MobileNav tab={tab} onNavigate={handleNavigate} importantCount={importantCount} trashCount={trashCount} />
     </div>
   );
 
@@ -267,7 +283,7 @@ export default function App() {
       {deleting && (
         <ConfirmDialog
           title="删除任务"
-          message={`确定删除「${deleting.title.length > 24 ? `${deleting.title.slice(0, 24)}…` : deleting.title}」吗？删除后无法恢复。`}
+          message={`确定删除「${deleting.title.length > 24 ? `${deleting.title.slice(0, 24)}…` : deleting.title}」吗？删除后会存入回收站，可随时恢复。`}
           onConfirm={() => {
             handleRemove(deleting.id);
             setDeleting(null);

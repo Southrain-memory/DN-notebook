@@ -7,6 +7,7 @@ import {
   NotebookPen,
   Settings,
   Sun,
+  Trash2,
 } from 'lucide-react';
 import type { Tab } from '../nav';
 
@@ -14,18 +15,20 @@ interface Props {
   tab: Tab;
   onNavigate: (tab: Tab) => void;
   importantCount: number;
+  trashCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
 
 /** 桌面端左侧边栏：主导航 + 底部主题切换与设置入口 */
-export function Sidebar({ tab, onNavigate, importantCount, theme, onToggleTheme }: Props) {
-  const items: { id: Tab; label: string; icon: typeof Flag; badge?: number }[] = [
+export function Sidebar({ tab, onNavigate, importantCount, trashCount, theme, onToggleTheme }: Props) {
+  const items: { id: Tab; label: string; icon: typeof Flag; badge?: number; neutralBadge?: boolean }[] = [
     { id: 'day', label: '今天', icon: CalendarCheck },
     { id: 'important', label: '重要事项', icon: Flag, badge: importantCount },
     { id: 'gantt', label: '时间甘特图', icon: ChartGantt },
     { id: 'upcoming', label: '即将到来', icon: CalendarDays },
     { id: 'records', label: '记事', icon: NotebookPen },
+    { id: 'trash', label: '回收站', icon: Trash2, badge: trashCount, neutralBadge: true },
   ];
 
   const itemCls = (active: boolean) =>
@@ -52,7 +55,11 @@ export function Sidebar({ tab, onNavigate, importantCount, theme, onToggleTheme 
             <item.icon className="h-[18px] w-[18px]" />
             <span className="flex-1 text-left">{item.label}</span>
             {!!item.badge && (
-              <span className="min-w-[18px] rounded-full bg-rose-500 px-1 text-center text-[10px] font-semibold leading-[18px] text-white">
+              <span
+                className={`min-w-[18px] rounded-full px-1 text-center text-[10px] font-semibold leading-[18px] text-white ${
+                  item.neutralBadge ? 'bg-stone-400 dark:bg-zinc-600' : 'bg-rose-500'
+                }`}
+              >
                 {item.badge}
               </span>
             )}

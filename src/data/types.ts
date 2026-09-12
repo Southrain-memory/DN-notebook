@@ -33,6 +33,8 @@ export interface Task {
   done: boolean;
   /** 完成时间戳（毫秒），未完成为 undefined */
   doneAt?: number;
+  /** 删除时间戳（毫秒）：有值表示已进回收站，可恢复；undefined 为正常任务 */
+  deletedAt?: number;
   /** 创建时间戳（毫秒） */
   createdAt: number;
   /** 最后修改时间戳（毫秒） */

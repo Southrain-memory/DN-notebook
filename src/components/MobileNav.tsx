@@ -1,20 +1,22 @@
-import { BookOpenText, CalendarCheck, CalendarDays, ChartGantt, Flag } from 'lucide-react';
+import { BookOpenText, CalendarCheck, CalendarDays, ChartGantt, Flag, Trash2 } from 'lucide-react';
 import type { Tab } from '../nav';
 
 interface Props {
   tab: Tab;
   onNavigate: (tab: Tab) => void;
   importantCount: number;
+  trashCount: number;
 }
 
 /** 手机端底部导航栏 */
-export function MobileNav({ tab, onNavigate, importantCount }: Props) {
-  const items: { id: Tab; label: string; icon: typeof Flag; badge?: number }[] = [
+export function MobileNav({ tab, onNavigate, importantCount, trashCount }: Props) {
+  const items: { id: Tab; label: string; icon: typeof Flag; badge?: number; neutralBadge?: boolean }[] = [
     { id: 'day', label: '今天', icon: CalendarCheck },
     { id: 'important', label: '重要', icon: Flag, badge: importantCount },
     { id: 'gantt', label: '甘特图', icon: ChartGantt },
     { id: 'upcoming', label: '即将', icon: CalendarDays },
     { id: 'records', label: '记事', icon: BookOpenText },
+    { id: 'trash', label: '回收站', icon: Trash2, badge: trashCount, neutralBadge: true },
   ];
 
   return (
@@ -34,7 +36,11 @@ export function MobileNav({ tab, onNavigate, importantCount }: Props) {
               <span className="relative">
                 <item.icon className="h-5 w-5" />
                 {!!item.badge && (
-                  <span className="absolute -right-2 -top-1 min-w-[14px] rounded-full bg-rose-500 px-0.5 text-center text-[9px] font-semibold leading-[14px] text-white">
+                  <span
+                    className={`absolute -right-2 -top-1 min-w-[14px] rounded-full px-0.5 text-center text-[9px] font-semibold leading-[14px] text-white ${
+                      item.neutralBadge ? 'bg-stone-400 dark:bg-zinc-600' : 'bg-rose-500'
+                    }`}
+                  >
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}

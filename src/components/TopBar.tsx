@@ -46,7 +46,7 @@ export function TopBar({
   }, []);
 
   const showDateNav = tab === 'day' || tab === 'gantt';
-  const showSearch = tab !== 'settings';
+  const showSearch = tab !== 'settings' && tab !== 'trash';
 
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-stone-100/85 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/85">
