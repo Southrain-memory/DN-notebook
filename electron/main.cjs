@@ -1,5 +1,5 @@
 // 《每日记事本》Electron 主进程
-const { app, BrowserWindow, ipcMain, Menu, shell, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell, Notification, Tray, dialog, nativeImage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -66,12 +66,54 @@ function iconPath() {
     : path.join(__dirname, '..', 'build', 'icon.png');
 }
 
-function focusMainWindow() {
+// ── 托盘：最小化到托盘时窗口不占任务栏，只保留状态栏图标 ──
+let tray = null;
+// 「彻底退出」放行 close 事件；点 X 一律拦截询问
+let quitting = false;
+
+function showMainWindow() {
   const win = BrowserWindow.getAllWindows()[0];
-  if (!win) return;
+  if (!win) {
+    createWindow();
+    return;
+  }
   if (win.isMinimized()) win.restore();
+  win.setSkipTaskbar(false);
   win.show();
   win.focus();
+  // macOS：从托盘恢复时 Dock 图标一并恢复
+  if (process.platform === 'darwin' && app.dock) app.dock.show();
+}
+
+function hideToTray() {
+  const win = BrowserWindow.getAllWindows()[0];
+  if (!win) return;
+  // macOS：隐藏到托盘时从 Dock 移除，只留菜单栏图标（对应 Linux/Windows 的任务栏隐藏）
+  if (process.platform === 'darwin' && app.dock) app.dock.hide();
+  win.setSkipTaskbar(true);
+  win.hide();
+}
+
+function createTray() {
+  const img = nativeImage.createFromPath(iconPath()).resize({ width: 24, height: 24 });
+  tray = new Tray(img);
+  tray.setToolTip('每日记事本');
+  // Linux(AppIndicator) 不触发 click 事件，左键即弹此菜单，恢复入口在菜单里
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: '显示主界面', click: showMainWindow },
+      { type: 'separator' },
+      {
+        label: '彻底退出',
+        click: () => {
+          quitting = true;
+          app.quit();
+        },
+      },
+    ]),
+  );
+  // Windows 左键单击托盘图标直接恢复窗口
+  if (process.platform === 'win32') tray.on('click', showMainWindow);
 }
 
 ipcMain.handle('notify:show', (_event, payload) => {
@@ -83,7 +125,7 @@ ipcMain.handle('notify:show', (_event, payload) => {
     icon: iconPath(),
     silent: false,
   });
-  n.on('click', focusMainWindow);
+  n.on('click', showMainWindow);
   n.show();
   return true;
 });
@@ -114,6 +156,30 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // 点 X 询问：最小化到托盘（不占任务栏）还是彻底退出
+  win.on('close', (event) => {
+    if (quitting) return;
+    event.preventDefault();
+    dialog
+      .showMessageBox(win, {
+        type: 'question',
+        title: '关闭窗口',
+        message: '要最小化到托盘还是彻底退出？',
+        detail: '最小化后会隐藏到系统托盘（任务栏不显示图标），任务提醒照常工作。',
+        buttons: ['最小化到托盘', '彻底退出', '取消'],
+        defaultId: 0,
+        cancelId: 2,
+        noLink: true,
+      })
+      .then(({ response }) => {
+        if (response === 0) hideToTray();
+        else if (response === 1) {
+          quitting = true;
+          app.quit();
+        }
+      });
   });
 
   if (DEV_SERVER_URL) {
@@ -165,27 +231,37 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-app.whenReady().then(() => {
-  buildMenu();
-  createWindow();
+// 单实例：已运行时（含最小化到托盘）再点启动器，唤起现有窗口而不是开新进程
+const gotSingleLock = app.requestSingleInstanceLock();
+if (!gotSingleLock) {
+  app.quit();
+} else {
+  app.on('second-instance', showMainWindow);
 
-  // 打包后启动时自动检查更新（静默，发现新版本会弹系统通知）
-  if (app.isPackaged) {
-    try {
-      const { autoUpdater } = require('electron-updater');
-      autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-        console.error('自动更新检查失败：', err?.message ?? err);
-      });
-    } catch (err) {
-      console.error('更新组件不可用：', err);
+  app.whenReady().then(() => {
+    buildMenu();
+    createWindow();
+    createTray();
+
+    // 打包后启动时自动检查更新（静默，发现新版本会弹系统通知）
+    if (app.isPackaged) {
+      try {
+        const { autoUpdater } = require('electron-updater');
+        autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+          console.error('自动更新检查失败：', err?.message ?? err);
+        });
+      } catch (err) {
+        console.error('更新组件不可用：', err);
+      }
     }
-  }
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
   });
-});
+}
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // 托盘模式下窗口只是隐藏不销毁；走到这里说明是彻底退出
+  app.quit();
 });
