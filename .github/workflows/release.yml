@@ -38,3 +38,10 @@ jobs:
         run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # electron-builder 不支持自定义 Release 说明，发布完成后用 gh 写入更新说明
+      - name: 写入更新说明到 Release
+        if: matrix.os == 'ubuntu-latest'
+        run: gh release edit "$GITHUB_REF_NAME" --notes-file build/release-notes.md --repo Southrain-memory/DN-notebook
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

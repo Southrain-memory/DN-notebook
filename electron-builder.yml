@@ -20,8 +20,6 @@ publish:
   repo: DN-notebook
   # 默认是 draft（草稿，需手动发布）；改成 release 后推标签即自动正式发布
   releaseType: release
-  # Release 页面展示的更新说明
-  releaseNotesFile: build/release-notes.md
 deb:
   # 自定义安装后脚本：无条件设置 chrome-sandbox 的 setuid 位（Ubuntu 24.04 AppArmor 限制 userns，
   # 默认脚本的 userns 探测会误判，见 build/after-install.sh 内注释）
