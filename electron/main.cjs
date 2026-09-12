@@ -8,8 +8,9 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 // app.name 会成为 Linux 窗口类名（WM_CLASS），必须保持 ASCII 才能被任务栏/启动器
 // 通过 .desktop 的 StartupWMClass 匹配（中文类名会匹配失败：图标退化、名称乱码）。
 // 数据目录钉回原中文名，沿用已发布版本的数据位置，老用户数据不受影响。
+// 测试/多开场景可用 DAILY_NOTEBOOK_USER_DATA 隔离数据目录（含单实例锁）。
 app.setName('daily-notebook');
-app.setPath('userData', path.join(app.getPath('appData'), '每日记事本'));
+app.setPath('userData', process.env.DAILY_NOTEBOOK_USER_DATA ?? path.join(app.getPath('appData'), '每日记事本'));
 // Windows 系统通知需要与安装包 appId 一致的 Application User Model ID
 app.setAppUserModelId('com.dailynotebook.app');
 
@@ -55,6 +56,31 @@ ipcMain.handle('store:save', (_event, key, data) => {
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
   return true;
 });
+
+// ── 窗口偏好（点 X 的行为）：主进程持久化，渲染层经 IPC 读写 ──
+// closeAction: 'ask'（每次询问，默认）/ 'minimize'（直接最小化到托盘）/ 'quit'（直接退出）
+function prefsFile() {
+  return path.join(app.getPath('userData'), 'window-prefs.json');
+}
+
+function loadPrefs() {
+  try {
+    const prefs = JSON.parse(fs.readFileSync(prefsFile(), 'utf8'));
+    return prefs && typeof prefs === 'object' ? prefs : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePrefs(patch) {
+  const next = { ...loadPrefs(), ...patch };
+  fs.mkdirSync(path.dirname(prefsFile()), { recursive: true });
+  fs.writeFileSync(prefsFile(), JSON.stringify(next, null, 2), 'utf8');
+  return next;
+}
+
+ipcMain.handle('prefs:load', () => loadPrefs());
+ipcMain.handle('prefs:save', (_event, patch) => (patch && typeof patch === 'object' ? savePrefs(patch) : loadPrefs()));
 
 function storeFileOf(key) {
   return path.join(app.getPath('userData'), `${key}.json`);
@@ -158,9 +184,20 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // 点 X 询问：最小化到托盘（不占任务栏）还是彻底退出
+  // 点 X：按记住的偏好直接执行，否则询问（可勾选"以后不再显示"记住选择）
   win.on('close', (event) => {
     if (quitting) return;
+    const action = loadPrefs().closeAction;
+    if (action === 'minimize') {
+      event.preventDefault();
+      hideToTray();
+      return;
+    }
+    if (action === 'quit') {
+      quitting = true;
+      app.quit();
+      return;
+    }
     event.preventDefault();
     dialog
       .showMessageBox(win, {
@@ -172,10 +209,14 @@ function createWindow() {
         defaultId: 0,
         cancelId: 2,
         noLink: true,
+        checkboxLabel: '以后不再显示此询问',
       })
-      .then(({ response }) => {
-        if (response === 0) hideToTray();
-        else if (response === 1) {
+      .then(({ response, checkboxChecked }) => {
+        if (response === 0) {
+          if (checkboxChecked) savePrefs({ closeAction: 'minimize' });
+          hideToTray();
+        } else if (response === 1) {
+          if (checkboxChecked) savePrefs({ closeAction: 'quit' });
           quitting = true;
           app.quit();
         }

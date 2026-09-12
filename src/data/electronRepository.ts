@@ -19,6 +19,10 @@ interface ElectronBridge {
   storeSave(key: string, data: unknown): Promise<unknown>;
   /** 弹出系统通知 */
   showNotification?(payload: { title: string; body: string }): Promise<boolean>;
+  /** 读取窗口偏好（点 X 的行为等） */
+  prefsLoad?(): Promise<{ closeAction?: string } | null>;
+  /** 写入窗口偏好 */
+  prefsSave?(patch: { closeAction?: string }): Promise<unknown>;
 }
 
 declare global {

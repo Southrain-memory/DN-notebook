@@ -16,4 +16,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   storeSave: (key, data) => ipcRenderer.invoke('store:save', key, data),
   /** 弹出系统通知（点击后聚焦主窗口） */
   showNotification: (payload) => ipcRenderer.invoke('notify:show', payload),
+  /** 读取窗口偏好（点 X 的行为等） */
+  prefsLoad: () => ipcRenderer.invoke('prefs:load'),
+  /** 写入窗口偏好 */
+  prefsSave: (patch) => ipcRenderer.invoke('prefs:save', patch),
 });

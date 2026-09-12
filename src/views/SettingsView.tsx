@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bell, Check, Download, Moon, Palette, Sun, Upload } from 'lucide-react';
 import type { Appearance } from '../hooks/useAppearance';
 import { DEFAULT_FONT_SIZE, FONT_OPTIONS, MAX_FONT_SIZE, MIN_FONT_SIZE } from '../hooks/useAppearance';
@@ -298,6 +298,28 @@ function NotifyPane({
   onNotifyChange: (patch: Partial<NotifySettings>) => void;
 }) {
   const [perm, setPerm] = useState<NotifyPermission>(getNotifyPermission);
+  // 点 X 行为偏好：true=每次询问；false=不询问直接执行记住的操作。null=非桌面版/加载中
+  const [closeAction, setCloseAction] = useState<'ask' | 'minimize' | 'quit' | null>(null);
+  const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.prefsLoad;
+
+  useEffect(() => {
+    if (!isDesktop) return;
+    let alive = true;
+    window
+      .electronAPI!.prefsLoad!()
+      .then((p) => {
+        if (alive) setCloseAction(p?.closeAction === 'quit' ? 'quit' : p?.closeAction === 'minimize' ? 'minimize' : 'ask');
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [isDesktop]);
+
+  const saveCloseAction = (next: 'ask' | 'minimize' | 'quit') => {
+    setCloseAction(next);
+    void window.electronAPI?.prefsSave?.({ closeAction: next });
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -373,6 +395,41 @@ function NotifyPane({
           </button>
         </div>
       </section>
+
+      {/* 关闭窗口行为（仅桌面版） */}
+      {closeAction !== null && (
+        <section className={card}>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <span className="text-sm font-medium text-stone-600 dark:text-zinc-300">关闭窗口前询问</span>
+              <p className="mt-0.5 text-xs text-stone-400 dark:text-zinc-500">
+                点 X 时询问最小化到托盘还是彻底退出；关闭后点 X 将直接执行记住的操作
+                {closeAction !== 'ask' && (
+                  <>
+                    （当前记住：{closeAction === 'minimize' ? '最小化到托盘' : '彻底退出'}）
+                  </>
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={closeAction === 'ask'}
+              aria-label="关闭窗口前询问"
+              onClick={() => saveCloseAction(closeAction === 'ask' ? 'minimize' : 'ask')}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                closeAction === 'ask' ? 'bg-rose-500' : 'bg-stone-300 dark:bg-zinc-600'
+              }`}
+            >
+              <span
+                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  closeAction === 'ask' ? 'translate-x-5' : ''
+                }`}
+              />
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
