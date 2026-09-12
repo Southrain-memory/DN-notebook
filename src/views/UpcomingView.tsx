@@ -57,6 +57,8 @@ export function UpcomingView({ tasks, onAdd, onToggle, onEdit, onDelete, onDefer
 
   return (
     <div className="flex flex-col gap-4">
+      <QuickAdd defaultDate={today} onAdd={onAdd} />
+
       <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-stone-800 text-white shadow-sm dark:bg-zinc-700">
           <CalendarClock className="h-4 w-4" />
@@ -66,8 +68,6 @@ export function UpcomingView({ tasks, onAdd, onToggle, onEdit, onDelete, onDefer
           <p className="text-xs text-stone-500 dark:text-zinc-400">逾期与未来 7 天的全部安排，共 {total} 件</p>
         </div>
       </div>
-
-      <QuickAdd defaultDate={today} onAdd={onAdd} />
 
       {total === 0 ? (
         <EmptyState

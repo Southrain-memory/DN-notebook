@@ -148,6 +148,8 @@ export function RecordsView({ events, categories, query, onAdd, onEdit, onDelete
 
   return (
     <div className="flex flex-col gap-4">
+      <EventQuickAdd categories={categories} onAdd={onAdd} onManageCategories={onManageCategories} />
+
       {/* 汇总头部 */}
       <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-stone-800 text-white shadow-sm dark:bg-zinc-700">
@@ -158,8 +160,6 @@ export function RecordsView({ events, categories, query, onAdd, onEdit, onDelete
           <p className="text-xs text-stone-500 dark:text-zinc-400">记录每一天发生的事，共 {events.length} 条</p>
         </div>
       </div>
-
-      <EventQuickAdd categories={categories} onAdd={onAdd} onManageCategories={onManageCategories} />
 
       {/* 分类筛选 */}
       <div className="flex flex-wrap items-center gap-1.5">

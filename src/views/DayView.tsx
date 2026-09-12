@@ -38,6 +38,8 @@ export function DayView({ tasks, viewDate, onAdd, onToggle, onEdit, onDelete, on
 
   return (
     <div className="flex flex-col gap-4">
+      <QuickAdd defaultDate={viewDate} onAdd={onAdd} />
+
       {/* 完成进度 + 统计 */}
       {total > 0 && (
         <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -67,8 +69,6 @@ export function DayView({ tasks, viewDate, onAdd, onToggle, onEdit, onDelete, on
           )}
         </div>
       )}
-
-      <QuickAdd defaultDate={viewDate} onAdd={onAdd} />
 
       {total === 0 ? (
         <EmptyState

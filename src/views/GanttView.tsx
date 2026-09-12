@@ -184,6 +184,8 @@ export function GanttView({ tasks, viewDate, onAdd, onToggle, onEdit, onDelete, 
 
   return (
     <div className="flex flex-col gap-4">
+      <QuickAdd defaultDate={viewDate} onAdd={onAdd} />
+
       {/* 汇总头部 */}
       <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-stone-800 text-white shadow-sm dark:bg-zinc-700">
@@ -194,8 +196,6 @@ export function GanttView({ tasks, viewDate, onAdd, onToggle, onEdit, onDelete, 
           <p className="text-xs text-stone-500 dark:text-zinc-400">{headerDesc}</p>
         </div>
       </div>
-
-      <QuickAdd defaultDate={viewDate} onAdd={onAdd} />
 
       {/* 甘特图画布 */}
       <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">

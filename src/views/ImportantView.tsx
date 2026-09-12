@@ -39,6 +39,8 @@ export function ImportantView({ tasks, onAdd, onToggle, onEdit, onDelete, onDefe
 
   return (
     <div className="flex flex-col gap-4">
+      <QuickAdd defaultDate={todayStr()} onAdd={onAdd} forcedPriority="high" />
+
       {/* 汇总头部 */}
       <div className="flex items-center gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/80 px-4 py-3.5 dark:border-rose-500/20 dark:bg-rose-500/10">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-rose-500 text-white shadow-sm shadow-rose-500/30">
@@ -51,8 +53,6 @@ export function ImportantView({ tasks, onAdd, onToggle, onEdit, onDelete, onDefe
           </p>
         </div>
       </div>
-
-      <QuickAdd defaultDate={todayStr()} onAdd={onAdd} forcedPriority="high" />
 
       {important.length === 0 ? (
         <EmptyState
